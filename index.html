@@ -15,7 +15,7 @@
       color: #333;
     }
     .container {
-      max-width: 500px;
+      max-width: 550px;
       margin: auto;
       padding: 20px;
       background: white;
@@ -46,6 +46,7 @@
       border: 1px solid #28a745;
       border-radius: 5px;
       color: #155724;
+      white-space: pre-line;
     }
   </style>
 </head>
@@ -60,6 +61,7 @@
       <option value="loan">Calculate Loan Amount</option>
       <option value="rate">Calculate Interest Rate</option>
       <option value="remaining">Calculate Remaining Principal</option>
+      <option value="prepay">Calculate After Prepayment</option>
     </select>
 
     <div id="inputFields"></div>
@@ -97,8 +99,18 @@
         fields = `
           <label>Loan Amount:</label><input type="number" id="loan" />
           <label>Annual Interest Rate (%):</label><input type="number" id="rate" />
-          <label>No. of Months (Total tenure):</label><input type="number" id="months" />
+          <label>Total Tenure (months):</label><input type="number" id="months" />
           <label>Months Completed:</label><input type="number" id="completed" />
+        `;
+      } else if (op === "prepay") {
+        fields = `
+          <label>Loan Amount:</label><input type="number" id="loan" />
+          <label>Annual Interest Rate (%):</label><input type="number" id="rate" />
+          <label>Total Tenure (months):</label><input type="number" id="months" />
+          <label>Prepayment Amount:</label><input type="number" id="prepay" />
+          <label>After How Many Months (prepayment time):</label><input type="number" id="afterMonths" />
+          <label>(Optional) Reduced Tenure (months):</label><input type="number" id="newMonths" />
+          <label>(Optional) New Interest Rate (%):</label><input type="number" id="newRate" />
         `;
       }
 
@@ -147,6 +159,38 @@
         const remaining = P * Math.pow(1 + r, m) - emi * ( (Math.pow(1 + r, m) - 1) / r );
 
         result = "Remaining Principal after " + m + " months: ₹" + remaining.toFixed(2);
+      }
+      else if (op === "prepay") {
+        const P = parseFloat(document.getElementById("loan").value);
+        const r = parseFloat(document.getElementById("rate").value) / 12 / 100;
+        const n = parseFloat(document.getElementById("months").value);
+        const prepayAmt = parseFloat(document.getElementById("prepay").value);
+        const afterM = parseFloat(document.getElementById("afterMonths").value);
+        const newMonths = parseFloat(document.getElementById("newMonths").value) || null;
+        const newRate = parseFloat(document.getElementById("newRate").value) / 12 / 100 || r;
+
+        // Original EMI
+        const emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+
+        // Remaining principal before prepayment
+        let remaining = P * Math.pow(1 + r, afterM) - emi * ((Math.pow(1 + r, afterM) - 1) / r);
+
+        // After prepayment
+        remaining = remaining - prepayAmt;
+
+        if (remaining <= 0) {
+          result = "Loan fully repaid after prepayment ✅";
+        } else if (newMonths) {
+          // Case 1: User reduces tenure
+          const newEmi = (remaining * newRate * Math.pow(1 + newRate, newMonths)) / (Math.pow(1 + newRate, newMonths) - 1);
+          result = "New EMI (reduced tenure " + newMonths + " months): ₹" + newEmi.toFixed(2);
+        } else {
+          // Case 2: Same tenure, new EMI
+          const leftMonths = n - afterM;
+          const newEmi = (remaining * newRate * Math.pow(1 + newRate, leftMonths)) / (Math.pow(1 + newRate, leftMonths) - 1);
+          result = "New EMI for remaining " + leftMonths + " months: ₹" + newEmi.toFixed(2) +
+                   "\nRemaining Principal after prepayment: ₹" + remaining.toFixed(2);
+        }
       }
 
       document.getElementById("result").innerHTML = result;
