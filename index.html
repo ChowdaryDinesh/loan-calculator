@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loan Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f4f4f9;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+    label, select, input, button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 8px;
+      font-size: 14px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .result {
+      margin-top: 15px;
+      padding: 10px;
+      background: #e9f7ef;
+      border: 1px solid #28a745;
+      border-radius: 5px;
+      color: #155724;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Loan Calculator</h2>
+    
+    <label for="operation">Select Operation:</label>
+    <select id="operation" onchange="showFields()">
+      <option value="">-- Select --</option>
+      <option value="emi">Calculate EMI Amount</option>
+      <option value="loan">Calculate Loan Amount</option>
+      <option value="rate">Calculate Interest Rate</option>
+      <option value="remaining">Calculate Remaining Principal</option>
+    </select>
+
+    <div id="inputFields"></div>
+
+    <button onclick="calculate()">Calculate</button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    function showFields() {
+      const op = document.getElementById("operation").value;
+      const inputDiv = document.getElementById("inputFields");
+      let fields = "";
+
+      if (op === "emi") {
+        fields = `
+          <label>Loan Amount:</label><input type="number" id="loan" />
+          <label>Annual Interest Rate (%):</label><input type="number" id="rate" />
+          <label>No. of Months:</label><input type="number" id="months" />
+        `;
+      } else if (op === "loan") {
+        fields = `
+          <label>EMI Amount:</label><input type="number" id="emi" />
+          <label>Annual Interest Rate (%):</label><input type="number" id="rate" />
+          <label>No. of Months:</label><input type="number" id="months" />
+        `;
+      } else if (op === "rate") {
+        fields = `
+          <label>EMI Amount:</label><input type="number" id="emi" />
+          <label>Loan Amount:</label><input type="number" id="loan" />
+          <label>No. of Months:</label><input type="number" id="months" />
+        `;
+      } else if (op === "remaining") {
+        fields = `
+          <label>Loan Amount:</label><input type="number" id="loan" />
+          <label>Annual Interest Rate (%):</label><input type="number" id="rate" />
+          <label>No. of Months (Total tenure):</label><input type="number" id="months" />
+          <label>Months Completed:</label><input type="number" id="completed" />
+        `;
+      }
+
+      inputDiv.innerHTML = fields;
+      document.getElementById("result").innerHTML = "";
+    }
+
+    function calculate() {
+      const op = document.getElementById("operation").value;
+      let result = "";
+
+      if (op === "emi") {
+        const P = parseFloat(document.getElementById("loan").value);
+        const r = parseFloat(document.getElementById("rate").value) / 12 / 100;
+        const n = parseFloat(document.getElementById("months").value);
+        const emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        result = "EMI per month: ₹" + emi.toFixed(2);
+      } 
+      else if (op === "loan") {
+        const E = parseFloat(document.getElementById("emi").value);
+        const r = parseFloat(document.getElementById("rate").value) / 12 / 100;
+        const n = parseFloat(document.getElementById("months").value);
+        const P = E * ( (Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n)) );
+        result = "Loan Amount: ₹" + P.toFixed(2);
+      } 
+      else if (op === "rate") {
+        const E = parseFloat(document.getElementById("emi").value);
+        const P = parseFloat(document.getElementById("loan").value);
+        const n = parseFloat(document.getElementById("months").value);
+
+        let low = 0, high = 1, r = 0;
+        for (let i = 0; i < 50; i++) {
+          r = (low + high) / 2;
+          const guess = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+          if (guess > E) high = r; else low = r;
+        }
+        result = "Approx Annual Interest Rate: " + (r * 12 * 100).toFixed(2) + "%";
+      }
+      else if (op === "remaining") {
+        const P = parseFloat(document.getElementById("loan").value);
+        const r = parseFloat(document.getElementById("rate").value) / 12 / 100;
+        const n = parseFloat(document.getElementById("months").value);
+        const m = parseFloat(document.getElementById("completed").value);
+
+        const emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        const remaining = P * Math.pow(1 + r, m) - emi * ( (Math.pow(1 + r, m) - 1) / r );
+
+        result = "Remaining Principal after " + m + " months: ₹" + remaining.toFixed(2);
+      }
+
+      document.getElementById("result").innerHTML = result;
+    }
+  </script>
+</body>
+</html>
